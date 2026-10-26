@@ -1,0 +1,4 @@
+vendor
+var
+public/uploads
+.env.local

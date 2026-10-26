@@ -1,0 +1,46 @@
+# Runs on every push and pull request: PHP tests, then a TypeScript check and production build.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_pgsql, intl
+          tools: composer:v2
+      - run: composer install --no-interaction --prefer-dist
+      - run: vendor/bin/phpunit
+      - name: Container and mapping check
+        run: |
+          php bin/console lint:container
+          php bin/console doctrine:schema:validate --skip-sync
+        env:
+          APP_ENV: test
+          APP_SECRET: ci
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci?serverVersion=16
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm run build
+        env:
+          API_URL: http://localhost:8000

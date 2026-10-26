@@ -1,0 +1,19 @@
+parameters:
+    app.upload_dir: '%kernel.project_dir%/public/uploads/products'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        bind:
+            int $freeDeliveryFrom: '%env(int:FREE_DELIVERY_FROM)%'
+            int $maxPendingPerPhone: '%env(int:MAX_PENDING_PER_PHONE)%'
+            string $uploadDir: '%app.upload_dir%'
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Domain/'
+            - '../src/Kernel.php'

@@ -1,0 +1,63 @@
+# Starts the whole shop on your PC:  docker compose up --build
+#   shop  -> http://localhost:3000
+#   admin -> http://localhost:3000/admin
+#   API   -> http://localhost:8000/api/products
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: dzstore
+      POSTGRES_USER: dzstore
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dzstore}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432" # so you can open the database with DBeaver or pgAdmin
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dzstore -d dzstore"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: ./backend
+    environment:
+      APP_ENV: dev
+      APP_SECRET: ${APP_SECRET:-dev-secret-change-me}
+      DATABASE_URL: postgresql://dzstore:${POSTGRES_PASSWORD:-dzstore}@db:5432/dzstore?serverVersion=16&charset=utf8
+      FREE_DELIVERY_FROM: ${FREE_DELIVERY_FROM:-10000}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    volumes:
+      - ./backend:/app
+      - api-vendor:/app/vendor # keeps installed PHP packages out of your folder
+      - uploads:/app/public/uploads
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: ./frontend
+    environment:
+      API_URL: http://api:8000
+      NEXT_PUBLIC_SHOP_PHONE: ${SHOP_PHONE:-}
+      NEXT_PUBLIC_SHOP_WHATSAPP: ${SHOP_WHATSAPP:-}
+      WATCHPACK_POLLING: "true" # file changes are seen on Windows too
+    volumes:
+      - ./frontend:/app
+      - web-node-modules:/app/node_modules
+      - web-next:/app/.next
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  db-data:
+  api-vendor:
+  uploads:
+  web-node-modules:
+  web-next:

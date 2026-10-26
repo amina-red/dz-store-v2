@@ -1,0 +1,32 @@
+framework:
+    secret: '%env(APP_SECRET)%'
+    http_method_override: false
+    handle_all_throwables: true
+
+    # Only the admin uses a session. The cookie is HttpOnly (JavaScript cannot read it)
+    # and SameSite=Lax (other sites cannot send it with a form post).
+    session:
+        name: dzs_admin
+        handler_id: null
+        cookie_secure: auto
+        cookie_samesite: lax
+        cookie_httponly: true
+
+    php_errors:
+        log: true
+
+    router:
+        utf8: true
+
+    rate_limiter:
+        # Stops someone from guessing phone numbers for one order number.
+        order_tracking:
+            policy: sliding_window
+            limit: 10
+            interval: '1 minute'
+
+when@test:
+    framework:
+        test: true
+        session:
+            storage_factory_id: session.storage.factory.mock_file
